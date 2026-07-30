@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sri Devi Metal Works - Inventory & Challan Suite</title>
+  
+  <!-- FIREBASE WEB SDK (v8 COMPATIBLE FOR EASY SINGLE-FILE INTEGRATION) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    /* --- CSS VARIABLES & THEMES --- */
+    :root {
+      --bg-primary: #f4f6f9;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --secondary: #475569;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      --transition: all 0.25s ease;
+      --sidebar-width: 260px;
+      --header-height: 64px;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-card: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --primary-light: rgba(59, 130, 246, 0.15);
+      --secondary: #94a3b8;
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --danger-light: rgba(239, 68, 68, 0.15);
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    /* --- BASE RESET & FONTS --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* --- LAYOUT STRUCTURE --- */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* --- SIDEBAR (DESKTOP) --- */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100;
+      transition: var(--transition);
+    }
+
+    .brand-header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-list {
+      list-style: none;
+      padding: 1rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+    }
+
+    .nav-item button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.75rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .nav-item button:hover {
+      background-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .nav-item.active button {
+      background-color: var(--primary);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .main-wrapper {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      transition: var(--transition);
+    }
+
+    .top-header {
+      height: var(--header-height);
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .sync-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+    }
+
+    .search-bar {
+      position: relative;
+      width: 260px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .search-bar input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .search-bar svg {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: var(--text-muted);
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-surface);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .icon-btn:hover {
+      background-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .content-container {
+      padding: 1.5rem;
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* --- MOBILE BOTTOM NAV --- */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      z-index: 100;
+      padding: 0.5rem 0;
+      justify-content: space-around;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.25rem;
+      width: 20%;
+    }
+
+    .bottom-nav-item.active {
+      color: var(--primary);
+    }
+
+    .bottom-nav-item svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    /* --- COMPONENTS & UI ELEMENTS --- */
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-icon svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .stat-info h4 {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-info p {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-secondary { background-color: var(--secondary); color: white; }
+    .btn-secondary:hover { opacity: 0.9; }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-danger { background-color: var(--danger); color: white; }
+    .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+    .btn-outline:hover { background-color: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
+
+    .fab {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      border: none;
+      z-index: 80;
+      transition: var(--transition);
+    }
+
+    .fab:hover {
+      transform: scale(1.08);
+    }
+
+    .fab svg { width: 28px; height: 28px; fill: white; }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: var(--bg-primary);
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: var(--primary-light); }
+
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-success { background-color: var(--success-light); color: var(--success); }
+    .badge-warning { background-color: var(--warning-light); color: var(--warning); }
+    .badge-danger { background-color: var(--danger-light); color: var(--danger); }
+    .badge-secondary { background-color: var(--border-color); color: var(--text-secondary); }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-secondary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background-color: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      max-width: 650px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: transform 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .view {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 1100;
+    }
+
+    .toast {
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-md);
+      background-color: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-lg);
+      border-left: 4px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .toast.success { border-left-color: var(--success); }
+    .toast.danger { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+
+    .sig-canvas {
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      background-color: var(--bg-primary);
+      cursor: crosshair;
+      width: 100%;
+      height: 120px;
+      touch-action: none;
+    }
+
+    .img-preview {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    /* --- PRINT STYLES --- */
+    #print-section {
+      display: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #print-section, #print-section * {
+        visibility: visible !important;
+      }
+      #print-section {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+        padding: 10mm;
+        box-sizing: border-box;
+      }
+    }
+
+    .challan-print-card {
+      border: 2px solid #000;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: white;
+      color: black;
+    }
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000;
+      padding-bottom: 15px;
+      margin-bottom: 15px;
+    }
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .print-table th, .print-table td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: left;
+      color: black !important;
+    }
+    .print-signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .sig-box {
+      text-align: center;
+      width: 200px;
+    }
+    .sig-box img {
+      max-height: 60px;
+      margin-bottom: 5px;
+    }
+    .sig-line {
+      border-top: 1px dashed #000;
+      padding-top: 5px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 868px) {
+      .sidebar {
+        display: none;
+      }
+      .main-wrapper {
+        margin-left: 0;
+        margin-bottom: 60px;
+      }
+      .bottom-nav {
+        display: flex;
+      }
+      .search-bar {
+        width: 180px;
+      }
+      .fab {
+        bottom: 5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo">S</div>
+        <div class="brand-title">Sri Devi Metals</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-view="dashboard">
+          <button><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Dashboard</button>
+        </li>
+        <li class="nav-item" data-view="inventory">
+          <button><svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg> Inventory</button>
+        </li>
+        <li class="nav-item" data-view="customers">
+          <button><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> Customers</button>
+        </li>
+        <li class="nav-item" data-view="challans">
+          <button><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Delivery Challans</button>
+        </li>
+        <li class="nav-item" data-view="reports">
+          <button><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> Reports</button>
+        </li>
+        <li class="nav-item" data-view="settings">
+          <button><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg> Settings</button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-wrapper">
+      <header class="top-header">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <h1 class="page-title" id="page-title-text">Dashboard</h1>
+          <span id="sync-badge" class="sync-status-badge badge-secondary">Offline Engine</span>
+        </div>
+        <div class="header-actions">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="global-search" placeholder="Search overall system... (Alt+F)" oninput="handleGlobalSearch(this.value)">
+          </div>
+          <button class="icon-btn" id="theme-toggle" title="Toggle Dark/Light Mode" onclick="toggleTheme()">
+            <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="content-container">
+        
+        <!-- VIEW: DASHBOARD -->
+        <section id="view-dashboard" class="view active">
+          <div class="grid-4">
+            <div class="card stat-card">
+              <div class="stat-icon" style="background-color: rgba(37, 99, 235, 0.15); color: var(--primary);">
+                <svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+              </div>
+              <div class="stat-info">
+                <h4>Total Products</h4>
+                <p id="dash-total-products">0</p>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background-color: rgba(16, 185, 129, 0.15); color: var(--success);">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+              </div>
+              <div class="stat-info">
+                <h4>Total Stock Items</h4>
+                <p id="dash-total-stock">0</p>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background-color: rgba(245, 158, 11, 0.15); color: var(--warning);">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              </div>
+              <div class="stat-info">
+                <h4>Low Stock Items</h4>
+                <p id="dash-low-stock">0</p>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon" style="background-color: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+              </div>
+              <div class="stat-info">
+                <h4>Inventory Value</h4>
+                <p id="dash-total-value">₹0.00</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h3 style="margin-bottom: 1rem;">Low Stock Alerts</h3>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Category</th>
+                      <th>Qty Left</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-low-stock-table">
+                    <!-- Dynamic insert -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <h3 style="margin-bottom: 1rem;">Recent Activity</h3>
+              <ul id="activity-log-list" style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Dynamic insert -->
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: INVENTORY -->
+        <section id="view-inventory" class="view">
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 0.5rem; flex: 1; min-width: 280px;">
+                <input type="text" id="inv-search" class="form-control" placeholder="Search by name or code..." oninput="renderInventoryTable()">
+                <select id="inv-filter-category" class="form-control" style="width: 160px;" onchange="renderInventoryTable()">
+                  <option value="">All Categories</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="openProductModal()">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Product
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Stock Qty</th>
+                  <th>Pur. Price</th>
+                  <th>Sell. Price</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body">
+                <!-- Dynamic -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- VIEW: CUSTOMERS -->
+        <section id="view-customers" class="view">
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center;">
+              <input type="text" id="cust-search" class="form-control" placeholder="Search customer by name or phone..." style="max-width: 320px;" oninput="renderCustomerTable()">
+              <button class="btn btn-primary" onclick="openCustomerModal()">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Customer
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Mobile</th>
+                  <th>Address</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customer-table-body">
+                <!-- Dynamic -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- VIEW: DELIVERY CHALLANS -->
+        <section id="view-challans" class="view">
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <input type="text" id="challan-search" class="form-control" placeholder="Search by Challan # or Customer..." style="max-width: 320px;" oninput="renderChallanTable()">
+              <button class="btn btn-primary" onclick="openCreateChallanView()">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create New Challan
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Challan No</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Total Qty</th>
+                  <th>Driver/Vehicle</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="challan-table-body">
+                <!-- Dynamic -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- VIEW: CREATE CHALLAN -->
+        <section id="view-create-challan" class="view">
+          <div class="card">
+            <h2 style="margin-bottom: 1.5rem;">New Delivery Challan</h2>
+            <form id="challan-form" onsubmit="saveDeliveryChallan(event)">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Challan Number</label>
+                  <input type="text" id="ch-no" class="form-control" readonly style="background-color: var(--bg-primary);">
+                </div>
+                <div class="form-group">
+                  <label>Date</label>
+                  <input type="date" id="ch-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label>Select Customer</label>
+                  <select id="ch-customer-select" class="form-control" required onchange="autofillChallanCustomer()">
+                    <option value="">-- Choose Customer --</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Customer Mobile</label>
+                  <input type="text" id="ch-cust-mobile" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                  <label>Delivery Address</label>
+                  <input type="text" id="ch-cust-address" class="form-control">
+                </div>
+              </div>
+
+              <h4 style="margin: 1.5rem 0 0.75rem 0;">Items Table</h4>
+              <div class="table-container" style="margin-bottom: 1rem;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 40%;">Product</th>
+                      <th>Available</th>
+                      <th>Qty</th>
+                      <th>Unit</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="challan-items-table">
+                    <!-- Dynamic item rows -->
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="addChallanItemRow()" style="margin-bottom: 1.5rem;">+ Add Item Row</button>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Driver Name</label>
+                  <input type="text" id="ch-driver" class="form-control" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                  <label>Vehicle Number</label>
+                  <input type="text" id="ch-vehicle" class="form-control" placeholder="Optional">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Remarks / Special Instructions</label>
+                <textarea id="ch-remarks" class="form-control" rows="2"></textarea>
+              </div>
+
+              <!-- Signatures -->
+              <div class="form-row" style="margin-top: 1rem;">
+                <div class="form-group">
+                  <label>Customer Signature Pad</label>
+                  <canvas id="cust-sig-canvas" class="sig-canvas"></canvas>
+                  <button type="button" class="btn btn-outline btn-sm" style="margin-top: 0.25rem;" onclick="clearCanvas('cust-sig-canvas')">Clear Signature</button>
+                </div>
+                <div class="form-group">
+                  <label>Authorized Company Signature</label>
+                  <canvas id="comp-sig-canvas" class="sig-canvas"></canvas>
+                  <button type="button" class="btn btn-outline btn-sm" style="margin-top: 0.25rem;" onclick="clearCanvas('comp-sig-canvas')">Clear Signature</button>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="switchView('challans')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save & Generate Challan</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- VIEW: REPORTS -->
+        <section id="view-reports" class="view">
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button class="btn btn-outline active" onclick="loadReport('stock', this)">Current Stock</button>
+              <button class="btn btn-outline" onclick="loadReport('low-stock', this)">Low Stock</button>
+              <button class="btn btn-outline" onclick="loadReport('daily', this)">Daily Activity</button>
+              <button class="btn btn-outline" onclick="loadReport('monthly', this)">Monthly Activity</button>
+            </div>
+          </div>
+
+          <div id="report-output-card" class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 id="report-title">Current Stock Report</h3>
+              <button class="btn btn-outline btn-sm" onclick="triggerPrint()">Print Report</button>
+            </div>
+            <div class="table-container">
+              <table id="report-table">
+                <!-- Dynamic Content -->
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: SETTINGS -->
+        <section id="view-settings" class="view">
+          <div class="grid-2">
+            <div class="card">
+              <h3 style="margin-bottom: 1rem;">Company Profile</h3>
+              <form id="settings-form" onsubmit="saveCompanySettings(event)">
+                <div class="form-group">
+                  <label>Company Name</label>
+                  <input type="text" id="set-company-name" class="form-control" required value="Sri Devi Metal Works">
+                </div>
+                <div class="form-group">
+                  <label>Address</label>
+                  <textarea id="set-company-address" class="form-control" rows="2">4-142, Andhra boor, Utkoor, Luxettipet, Mancherial Dist 504215</textarea>
+                </div>
+                <div class="form-group">
+                  <label>GST / Tax ID</label>
+                  <input type="text" id="set-company-gst" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label>Phone Number</label>
+                  <input type="text" id="set-company-phone" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label>Company Logo (Base64 Upload)</label>
+                  <input type="file" id="set-company-logo" class="form-control" accept="image/*" onchange="previewLogoUpload(this)">
+                  <img id="logo-preview" src="" class="img-preview" style="margin-top: 0.5rem; display: none;">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <h3 style="margin-bottom: 1rem;">Cloud & Backup Settings</h3>
+              
+              <!-- FIREBASE CONFIGURATION BOX -->
+              <div style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom:0.5rem; font-size: 0.95rem;">🌐 Free Cloud Database Setup</h4>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                  Paste your free Firebase Config JSON here to sync data online across all your devices in real-time.
+                </p>
+                <textarea id="firebase-config-input" class="form-control" rows="4" placeholder='{"apiKey": "...", "projectId": "..."}'></textarea>
+                <button class="btn btn-primary btn-sm" style="margin-top: 0.5rem;" onclick="saveFirebaseConfig()">Connect Cloud Database</button>
+              </div>
+
+              <h4 style="margin-bottom: 0.5rem; font-size:0.95rem;">Offline Backup File</h4>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button class="btn btn-success btn-sm" onclick="exportJSONBackup()">
+                  <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Export Backup (JSON)
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="openModal('restore-modal')">
+                  <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> Restore Backup (File or Text)
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- BOTTOM MOBILE NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Home
+    </button>
+    <button class="bottom-nav-item" data-view="inventory">
+      <svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1z"/></svg>
+      Inventory
+    </button>
+    <button class="bottom-nav-item" data-view="challans">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+      Challans
+    </button>
+    <button class="bottom-nav-item" data-view="customers">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg>
+      Customers
+    </button>
+    <button class="bottom-nav-item" data-view="settings">
+      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <!-- QUICK ACTION FAB -->
+  <button class="fab" id="global-fab" onclick="openCreateChallanView()" title="New Delivery Challan">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+  </button>
+
+  <!-- MODAL: PRODUCT EDIT/ADD -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="product-modal-title">Add Product</h3>
+        <button class="icon-btn" onclick="closeModal('product-modal')">✕</button>
+      </div>
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <div class="modal-body">
+          <input type="hidden" id="prod-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product Code / SKU</label>
+              <input type="text" id="prod-code" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Product Name</label>
+              <input type="text" id="prod-name" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" id="prod-category" class="form-control" placeholder="e.g. Almari, Cooler">
+            </div>
+            <div class="form-group">
+              <label>Unit</label>
+              <input type="text" id="prod-unit" class="form-control" placeholder="Pcs, Set, Box" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Quantity in Stock</label>
+              <input type="number" id="prod-qty" class="form-control" min="0" value="0" required>
+            </div>
+            <div class="form-group">
+              <label>Low Stock Threshold</label>
+              <input type="number" id="prod-low-limit" class="form-control" min="0" value="5" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Purchase Price (₹)</label>
+              <input type="number" step="0.01" id="prod-purchase-price" class="form-control" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label>Selling Price (₹)</label>
+              <input type="number" step="0.01" id="prod-selling-price" class="form-control" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Product Image (Base64)</label>
+            <input type="file" id="prod-img-input" class="form-control" accept="image/*" onchange="previewProductImgUpload(this)">
+            <img id="prod-img-preview" src="" class="img-preview" style="margin-top: 0.5rem; display: none;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CUSTOMER EDIT/ADD -->
+  <div class="modal-overlay" id="customer-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="customer-modal-title">Add Customer</h3>
+        <button class="icon-btn" onclick="closeModal('customer-modal')">✕</button>
+      </div>
+      <form id="customer-form" onsubmit="saveCustomer(event)">
+        <div class="modal-body">
+          <input type="hidden" id="cust-id">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="cust-name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="text" id="cust-mobile" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <textarea id="cust-address" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="cust-notes" class="form-control" placeholder="Optional notes">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('customer-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESTORE BACKUP -->
+  <div class="modal-overlay" id="restore-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Restore Backup Data</h3>
+        <button class="icon-btn" onclick="closeModal('restore-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Option 1: Choose Backup File (.json)</label>
+          <input type="file" id="import-json-file" class="form-control" accept=".json" onchange="importJSONBackup(this)">
+        </div>
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px dashed var(--border-color);">
+        <div class="form-group">
+          <label>Option 2: Paste Backup JSON Text directly</label>
+          <textarea id="import-json-text" class="form-control" rows="6" placeholder="Paste your exported backup JSON text here..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('restore-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="importJSONFromText()">Restore From Text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BARCODE / QR VIEW -->
+  <div class="modal-overlay" id="barcode-modal">
+    <div class="modal" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h3>Product Barcode & QR</h3>
+        <button class="icon-btn" onclick="closeModal('barcode-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4 id="barcode-prod-title">Product Code</h4>
+        <div style="margin: 1.5rem 0;">
+          <canvas id="barcode-canvas"></canvas>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: center;">
+        <button class="btn btn-primary btn-sm" onclick="printBarcode()">Print Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FULL-SCREEN DELIVERY CHALLAN PREVIEWER -->
+  <div class="modal-overlay" id="challan-preview-modal">
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>Delivery Challan Preview</h3>
+        <button class="icon-btn" onclick="closeModal('challan-preview-modal')">✕</button>
+      </div>
+      <div class="modal-body" style="background: #525659; padding: 1rem;">
+        <div id="modal-challan-content">
+          <!-- Formatted A4 Delivery Challan -->
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-wrap: wrap; gap: 0.5rem; justify-content: space-between;">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn btn-success btn-sm" onclick="shareWhatsAppChallan()">📱 Share Link on WhatsApp</button>
+          <button class="btn btn-outline btn-sm" onclick="downloadStandaloneHTML()">📄 Download .HTML File</button>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="closeModal('challan-preview-modal')">Close</button>
+          <button class="btn btn-primary btn-sm" onclick="triggerPrint()">🖨️ Print / Save PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT SECTION -->
+  <div id="print-section">
+    <!-- Populated dynamically -->
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- JAVASCRIPT CODE -->
+  <script>
+    /* --- FIREBASE & CLOUD SYNC ENGINE --- */
+    let dbFirestore = null;
+    let isCloudActive = false;
+
+    function initCloudEngine() {
+      const storedCfg = localStorage.getItem('fb_config_json');
+      if (storedCfg && window.firebase) {
+        try {
+          const cfg = JSON.parse(storedCfg);
+          if (!firebase.apps.length) {
+            firebase.initializeApp(cfg);
+          }
+          dbFirestore = firebase.firestore();
+          isCloudActive = true;
+          
+          const badge = document.getElementById('sync-badge');
+          badge.textContent = "🌐 Cloud Realtime Active";
+          badge.className = "sync-status-badge badge-success";
+
+          document.getElementById('firebase-config-input').value = storedCfg;
+          setupCloudRealtimeListeners();
+        } catch(e) {
+          console.warn("Cloud DB setup issue:", e);
+        }
+      }
+    }
+
+    function saveFirebaseConfig() {
+      const raw = document.getElementById('firebase-config-input').value.trim();
+      if (!raw) return;
+      try {
+        JSON.parse(raw);
+        localStorage.setItem('fb_config_json', raw);
+        showToast("Cloud configuration saved! Reloading...", "success");
+        setTimeout(() => location.reload(), 1000);
+      } catch(e) {
+        alert("Invalid Firebase Config JSON");
+      }
+    }
+
+    function setupCloudRealtimeListeners() {
+      if (!isCloudActive) return;
+
+      ['products', 'customers', 'challans'].forEach(storeName => {
+        dbFirestore.collection(storeName).onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(async change => {
+            const data = change.doc.data();
+            data.id = isNaN(change.doc.id) ? change.doc.id : Number(change.doc.id);
+            if (change.type === "added" || change.type === "modified") {
+              await dbPutLocal(storeName, data);
+            } else if (change.type === "removed") {
+              await dbDeleteLocal(storeName, data.id);
+            }
+          });
+          refreshActiveView();
+        });
+      });
+    }
+
+    /* --- INDEXEDDB LOCAL DATABASE ENGINE --- */
+    const DB_NAME = 'SriDeviMetalWorksDB';
+    const DB_VERSION = 1;
+    let db = null;
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (e) => {
+          const dbRef = e.target.result;
+          if (!dbRef.objectStoreNames.contains('products')) dbRef.createObjectStore('products', { keyPath: 'id', autoIncrement: true });
+          if (!dbRef.objectStoreNames.contains('customers')) dbRef.createObjectStore('customers', { keyPath: 'id', autoIncrement: true });
+          if (!dbRef.objectStoreNames.contains('challans')) dbRef.createObjectStore('challans', { keyPath: 'id', autoIncrement: true });
+          if (!dbRef.objectStoreNames.contains('settings')) dbRef.createObjectStore('settings', { keyPath: 'key' });
+          if (!dbRef.objectStoreNames.contains('activity')) dbRef.createObjectStore('activity', { keyPath: 'id', autoIncrement: true });
+        };
+
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+
+        request.onerror = (e) => reject('Database Error: ' + e.target.errorCode);
+      });
+    }
+
+    function dbGetAll(storeName) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+      });
+    }
+
+    function dbGet(storeName, key) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    function dbPutLocal(storeName, val) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(val);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    async function dbPut(storeName, val) {
+      const resId = await dbPutLocal(storeName, val);
+      if (isCloudActive) {
+        const docId = String(val.id || resId);
+        if (!val.id) val.id = Number(docId) || docId;
+        dbFirestore.collection(storeName).doc(docId).set(val);
+      }
+      return resId;
+    }
+
+    function dbDeleteLocal(storeName, key) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+      });
+    }
+
+    async function dbDelete(storeName, key) {
+      await dbDeleteLocal(storeName, key);
+      if (isCloudActive) {
+        dbFirestore.collection(storeName).doc(String(key)).delete();
+      }
+    }
+
+    /* --- SAFE PRINT HELPER --- */
+    function triggerPrint() {
+      try {
+        window.print();
+      } catch (e) {
+        showToast("Print not supported on this app viewer. Take a screenshot or download the file.", "warning");
+      }
+    }
+
+    /* --- TOAST NOTIFICATIONS --- */
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    /* --- LOG ACTIVITY --- */
+    async function logActivity(action, details) {
+      await dbPut('activity', {
+        action,
+        details,
+        timestamp: new Date().toLocaleString()
+      });
+    }
+
+    /* --- NAVIGATION SYSTEM --- */
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => switchView(btn.getAttribute('data-view')));
+    });
+
+    function switchView(viewName) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('[data-view]').forEach(n => n.classList.remove('active'));
+
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (targetView) targetView.classList.add('active');
+
+      document.querySelectorAll(`[data-view="${viewName}"]`).forEach(n => n.classList.add('active'));
+
+      const titleMap = {
+        dashboard: 'Dashboard',
+        inventory: 'Inventory Management',
+        customers: 'Customer Directory',
+        challans: 'Delivery Challans',
+        'create-challan': 'Create Delivery Challan',
+        reports: 'Reports & Analytics',
+        settings: 'Settings & Data'
+      };
+      document.getElementById('page-title-text').textContent = titleMap[viewName] || 'Dashboard';
+
+      refreshActiveView();
+    }
+
+    function refreshActiveView() {
+      const activeView = document.querySelector('.view.active')?.id;
+      if (activeView === 'view-dashboard') loadDashboardData();
+      if (activeView === 'view-inventory') renderInventoryTable();
+      if (activeView === 'view-customers') renderCustomerTable();
+      if (activeView === 'view-challans') renderChallanTable();
+      if (activeView === 'view-settings') loadCompanySettings();
+      if (activeView === 'view-reports') loadReport('stock');
+    }
+
+    /* --- THEME TOGGLE --- */
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      dbPut('settings', { key: 'theme', value: next });
+    }
+
+    /* --- DASHBOARD LOGIC --- */
+    async function loadDashboardData() {
+      const products = await dbGetAll('products');
+      const customers = await dbGetAll('customers');
+      const challans = await dbGetAll('challans');
+      const activities = await dbGetAll('activity');
+
+      const totalProds = products.length;
+      let totalStock = 0;
+      let lowStockCount = 0;
+      let totalValue = 0;
+      const lowStockItems = [];
+
+      products.forEach(p => {
+        const qty = Number(p.qty) || 0;
+        const lowLimit = Number(p.lowStockLimit) || 5;
+        const price = Number(p.purchasePrice) || 0;
+
+        totalStock += qty;
+        totalValue += (qty * price);
+
+        if (qty <= lowLimit) {
+          lowStockCount++;
+          lowStockItems.push(p);
+        }
+      });
+
+      document.getElementById('dash-total-products').textContent = totalProds;
+      document.getElementById('dash-total-stock').textContent = totalStock;
+      document.getElementById('dash-low-stock').textContent = lowStockCount;
+      document.getElementById('dash-total-value').textContent = `₹${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+      const lowTable = document.getElementById('dash-low-stock-table');
+      lowTable.innerHTML = '';
+      if (lowStockItems.length === 0) {
+        lowTable.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">No low stock items</td></tr>`;
+      } else {
+        lowStockItems.slice(0, 5).forEach(p => {
+          lowTable.innerHTML += `
+            <tr>
+              <td><b>${p.name}</b></td>
+              <td>${p.category || '-'}</td>
+              <td><span class="badge badge-danger">${p.qty} ${p.unit}</span></td>
+              <td><button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">Restock</button></td>
+            </tr>
+          `;
+        });
+      }
+
+      const actList = document.getElementById('activity-log-list');
+      actList.innerHTML = '';
+      const recentActs = activities.reverse().slice(0, 5);
+      if (recentActs.length === 0) {
+        actList.innerHTML = `<li style="color: var(--text-muted); font-size:0.85rem;">No recent activities logged</li>`;
+      } else {
+        recentActs.forEach(a => {
+          actList.innerHTML += `
+            <li style="font-size:0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">
+              <strong>${a.action}</strong> - ${a.details}
+              <div style="font-size:0.75rem; color: var(--text-muted);">${a.timestamp}</div>
+            </li>
+          `;
+        });
+      }
+    }
+
+    /* --- INVENTORY MODULE --- */
+    let tempProdImg = '';
+
+    function openProductModal(prod = null) {
+      document.getElementById('product-form').reset();
+      document.getElementById('prod-id').value = '';
+      document.getElementById('prod-img-preview').style.display = 'none';
+      tempProdImg = '';
+
+      if (prod) {
+        document.getElementById('product-modal-title').textContent = 'Edit Product';
+        document.getElementById('prod-id').value = prod.id;
+        document.getElementById('prod-code').value = prod.code;
+        document.getElementById('prod-name').value = prod.name;
+        document.getElementById('prod-category').value = prod.category || '';
+        document.getElementById('prod-unit').value = prod.unit;
+        document.getElementById('prod-qty').value = prod.qty;
+        document.getElementById('prod-low-limit').value = prod.lowStockLimit;
+        document.getElementById('prod-purchase-price').value = prod.purchasePrice;
+        document.getElementById('prod-selling-price').value = prod.sellingPrice;
+        if (prod.image) {
+          tempProdImg = prod.image;
+          document.getElementById('prod-img-preview').src = prod.image;
+          document.getElementById('prod-img-preview').style.display = 'block';
+        }
+      } else {
+        document.getElementById('product-modal-title').textContent = 'Add Product';
+      }
+      openModal('product-modal');
+    }
+
+    function previewProductImgUpload(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          tempProdImg = e.target.result;
+          document.getElementById('prod-img-preview').src = tempProdImg;
+          document.getElementById('prod-img-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      const product = {
+        code: document.getElementById('prod-code').value.trim(),
+        name: document.getElementById('prod-name').value.trim(),
+        category: document.getElementById('prod-category').value.trim(),
+        unit: document.getElementById('prod-unit').value.trim(),
+        qty: Number(document.getElementById('prod-qty').value),
+        lowStockLimit: Number(document.getElementById('prod-low-limit').value),
+        purchasePrice: Number(document.getElementById('prod-purchase-price').value),
+        sellingPrice: Number(document.getElementById('prod-selling-price').value),
+        image: tempProdImg
+      };
+
+      if (id) product.id = isNaN(id) ? id : Number(id);
+
+      await dbPut('products', product);
+      await logActivity(id ? 'Updated Product' : 'Added Product', `${product.name} (${product.code})`);
+      showToast(id ? 'Product updated' : 'Product added', 'success');
+      closeModal('product-modal');
+      renderInventoryTable();
+    }
+
+    async function editProduct(id) {
+      const key = isNaN(id) ? id : Number(id);
+      const prod = await dbGet('products', key);
+      if (prod) openProductModal(prod);
+    }
+
+    async function deleteProduct(id) {
+      if (confirm('Are you sure you want to delete this product?')) {
+        const key = isNaN(id) ? id : Number(id);
+        const prod = await dbGet('products', key);
+        await dbDelete('products', key);
+        await logActivity('Deleted Product', prod ? prod.name : `ID: ${id}`);
+        showToast('Product deleted', 'danger');
+        renderInventoryTable();
+      }
+    }
+
+    async function renderInventoryTable() {
+      const products = await dbGetAll('products');
+      const search = document.getElementById('inv-search').value.toLowerCase();
+      const catFilter = document.getElementById('inv-filter-category').value;
+
+      const catSelect = document.getElementById('inv-filter-category');
+      const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      catSelect.innerHTML = `<option value="">All Categories</option>` + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      catSelect.value = catFilter;
+
+      const tbody = document.getElementById('inventory-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search) || p.code.toLowerCase().includes(search);
+        const matchesCat = !catFilter || p.category === catFilter;
+        return matchesSearch && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No products found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const isLow = p.qty <= (p.lowStockLimit || 5);
+        const imgTag = p.image ? `<img src="${p.image}" class="img-preview" style="width:40px;height:40px;">` : `<div style="width:40px;height:40px;background:var(--bg-primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.7rem;">No Img</div>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${imgTag}</td>
+            <td><b>${p.code}</b></td>
+            <td>${p.name}</td>
+            <td>${p.category || '-'}</td>
+            <td><span class="badge ${isLow ? 'badge-danger' : 'badge-success'}">${p.qty} ${p.unit}</span></td>
+            <td>₹${Number(p.purchasePrice).toFixed(2)}</td>
+            <td>₹${Number(p.sellingPrice).toFixed(2)}</td>
+            <td>
+              <div style="display:flex; gap:0.3rem;">
+                <button class="btn btn-outline btn-sm" onclick="showBarcodeModal('${p.code}', '${p.name}')">Code</button>
+                <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    /* --- BARCODE CODE39 GENERATOR --- */
+    const CODE39_MAP = {
+      '0': '101001101101', '1': '110100101011', '2': '101100101011', '3': '110110010101',
+      '4': '101001110101', '5': '110100110101', '6': '101100110101', '7': '101001011011',
+      '8': '110100101101', '9': '101100101101', 'A': '110101001011', 'B': '101101001011',
+      'C': '110110100101', 'D': '101011001011', 'E': '110101100101', 'F': '101101100101',
+      'G': '101010011011', 'H': '110101001101', 'I': '101101001101', 'J': '101011001101',
+      'K': '110101010011', 'L': '101101010011', 'M': '110110101001', 'N': '101011010011',
+      'O': '110101101001', 'P': '101101101001', 'Q': '101010110011', 'R': '110101011001',
+      'S': '101101011001', 'T': '101011011001', 'U': '110010101011', 'V': '100110101011',
+      'W': '110011010101', 'X': '100101101011', 'Y': '110010110101', 'Z': '100110110101',
+      '-': '100101011011', '.': '110010101101', ' ': '100110101101', '*': '100101101101'
+    };
+
+    let currentBarcodeTitle = '';
+
+    function showBarcodeModal(code, name) {
+      currentBarcodeTitle = `${name} (${code})`;
+      document.getElementById('barcode-prod-title').textContent = currentBarcodeTitle;
+      openModal('barcode-modal');
+
+      setTimeout(() => {
+        const canvas = document.getElementById('barcode-canvas');
+        const ctx = canvas.getContext('2d');
+        const str = '*' + code.toUpperCase() + '*';
+        
+        let pattern = '';
+        for (let char of str) {
+          pattern += (CODE39_MAP[char] || CODE39_MAP[' ']) + '0';
+        }
+
+        canvas.width = pattern.length * 3 + 20;
+        canvas.height = 80;
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#000000';
+        for (let i = 0; i < pattern.length; i++) {
+          if (pattern[i] === '1') {
+            ctx.fillRect(10 + i * 3, 10, 3, 50);
+          }
+        }
+
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(code, canvas.width / 2, 72);
+      }, 100);
+    }
+
+    function printBarcode() {
+      const canvas = document.getElementById('barcode-canvas');
+      const printArea = document.getElementById('print-section');
+      const imgData = canvas.toDataURL();
+
+      printArea.innerHTML = `
+        <div style="text-align: center; padding: 40px; font-family: Arial, sans-serif;">
+          <h2 style="margin-bottom: 10px;">${currentBarcodeTitle}</h2>
+          <img src="${imgData}" style="max-width: 100%; height: auto; margin-top: 15px;">
+        </div>
+      `;
+
+      triggerPrint();
+    }
+
+    /* --- CUSTOMERS MODULE --- */
+    function openCustomerModal(cust = null) {
+      document.getElementById('customer-form').reset();
+      document.getElementById('cust-id').value = '';
+
+      if (cust) {
+        document.getElementById('customer-modal-title').textContent = 'Edit Customer';
+        document.getElementById('cust-id').value = cust.id;
+        document.getElementById('cust-name').value = cust.name;
+        document.getElementById('cust-mobile').value = cust.mobile;
+        document.getElementById('cust-address').value = cust.address || '';
+        document.getElementById('cust-notes').value = cust.notes || '';
+      } else {
+        document.getElementById('customer-modal-title').textContent = 'Add Customer';
+      }
+      openModal('customer-modal');
+    }
+
+    async function saveCustomer(e) {
+      e.preventDefault();
+      const id = document.getElementById('cust-id').value;
+      const customer = {
+        name: document.getElementById('cust-name').value.trim(),
+        mobile: document.getElementById('cust-mobile').value.trim(),
+        address: document.getElementById('cust-address').value.trim(),
+        notes: document.getElementById('cust-notes').value.trim()
+      };
+
+      if (id) customer.id = isNaN(id) ? id : Number(id);
+
+      await dbPut('customers', customer);
+      await logActivity(id ? 'Updated Customer' : 'Added Customer', customer.name);
+      showToast(id ? 'Customer updated' : 'Customer added', 'success');
+      closeModal('customer-modal');
+      renderCustomerTable();
+    }
+
+    async function editCustomer(id) {
+      const key = isNaN(id) ? id : Number(id);
+      const cust = await dbGet('customers', key);
+      if (cust) openCustomerModal(cust);
+    }
+
+    async function deleteCustomer(id) {
+      if (confirm('Delete this customer?')) {
+        const key = isNaN(id) ? id : Number(id);
+        const cust = await dbGet('customers', key);
+        await dbDelete('customers', key);
+        await logActivity('Deleted Customer', cust ? cust.name : `ID: ${id}`);
+        showToast('Customer deleted', 'danger');
+        renderCustomerTable();
+      }
+    }
+
+    async function renderCustomerTable() {
+      const customers = await dbGetAll('customers');
+      const search = document.getElementById('cust-search').value.toLowerCase();
+      const tbody = document.getElementById('customer-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = customers.filter(c => c.name.toLowerCase().includes(search) || c.mobile.includes(search));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No customers found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        tbody.innerHTML += `
+          <tr>
+            <td><b>${c.name}</b></td>
+            <td>${c.mobile}</td>
+            <td>${c.address || '-'}</td>
+            <td>${c.notes || '-'}</td>
+            <td>
+              <div style="display:flex; gap:0.3rem;">
+                <button class="btn btn-outline btn-sm" onclick="editCustomer('${c.id}')">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    /* --- DELIVERY CHALLAN MODULE --- */
+    async function openCreateChallanView() {
+      document.getElementById('challan-form').reset();
+      
+      const challans = await dbGetAll('challans');
+      const nextNo = `DC-${String(challans.length + 1).padStart(4, '0')}`;
+      document.getElementById('ch-no').value = nextNo;
+      document.getElementById('ch-date').value = new Date().toISOString().split('T')[0];
+
+      const customers = await dbGetAll('customers');
+      const custSelect = document.getElementById('ch-customer-select');
+      custSelect.innerHTML = `<option value="">-- Choose Customer --</option>` + customers.map(c => `<option value="${c.id}">${c.name} (${c.mobile})</option>`).join('');
+
+      document.getElementById('challan-items-table').innerHTML = '';
+      addChallanItemRow();
+
+      initSignatureCanvas('cust-sig-canvas');
+      initSignatureCanvas('comp-sig-canvas');
+
+      switchView('create-challan');
+    }
+
+    async function autofillChallanCustomer() {
+      const custId = document.getElementById('ch-customer-select').value;
+      if (!custId) return;
+      const key = isNaN(custId) ? custId : Number(custId);
+      const cust = await dbGet('customers', key);
+      if (cust) {
+        document.getElementById('ch-cust-mobile').value = cust.mobile;
+        document.getElementById('ch-cust-address').value = cust.address || '';
+      }
+    }
+
+    let itemRowCounter = 0;
+    async function addChallanItemRow() {
+      itemRowCounter++;
+      const products = await dbGetAll('products');
+      const tbody = document.getElementById('challan-items-table');
+      const rowId = `item-row-${itemRowCounter}`;
+
+      const prodOptions = products.map(p => `<option value="${p.id}" data-unit="${p.unit}" data-qty="${p.qty}">${p.name} (${p.code})</option>`).join('');
+
+      const tr = document.createElement('tr');
+      tr.id = rowId;
+      tr.innerHTML = `
+        <td>
+          <select class="form-control prod-select" onchange="onChallanProductSelect('${rowId}')" required>
+            <option value="">Select Product</option>
+            ${prodOptions}
+          </select>
+        </td>
+        <td><span class="stock-avail-badge badge badge-secondary">0</span></td>
+        <td><input type="number" class="form-control item-qty" min="1" value="1" required style="width: 80px;"></td>
+        <td><input type="text" class="form-control item-unit" readonly style="width: 80px; background:var(--bg-primary);"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('${rowId}').remove()">X</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function onChallanProductSelect(rowId) {
+      const row = document.getElementById(rowId);
+      const select = row.querySelector('.prod-select');
+      const opt = select.options[select.selectedIndex];
+      
+      const unit = opt.getAttribute('data-unit') || '';
+      const stock = opt.getAttribute('data-qty') || '0';
+
+      row.querySelector('.item-unit').value = unit;
+      const badge = row.querySelector('.stock-avail-badge');
+      badge.textContent = `${stock} ${unit}`;
+      badge.className = `badge ${Number(stock) > 0 ? 'badge-success' : 'badge-danger'}`;
+    }
+
+    async function saveDeliveryChallan(e) {
+      e.preventDefault();
+
+      const custId = document.getElementById('ch-customer-select').value;
+      const keyCust = isNaN(custId) ? custId : Number(custId);
+      const cust = await dbGet('customers', keyCust);
+
+      const itemRows = document.querySelectorAll('#challan-items-table tr');
+      const items = [];
+      let totalQty = 0;
+
+      for (let row of itemRows) {
+        const prodId = row.querySelector('.prod-select').value;
+        const qty = Number(row.querySelector('.item-qty').value);
+        const unit = row.querySelector('.item-unit').value;
+
+        if (!prodId) continue;
+
+        const keyProd = isNaN(prodId) ? prodId : Number(prodId);
+        const prod = await dbGet('products', keyProd);
+
+        if (prod.qty < qty) {
+          alert(`Insufficient stock for ${prod.name}! Available: ${prod.qty}`);
+          return;
+        }
+
+        prod.qty -= qty;
+        await dbPut('products', prod);
+
+        items.push({
+          productId: prod.id,
+          code: prod.code,
+          name: prod.name,
+          qty,
+          unit
+        });
+
+        totalQty += qty;
+      }
+
+      const challan = {
+        challanNo: document.getElementById('ch-no').value,
+        date: document.getElementById('ch-date').value,
+        customerId: cust.id,
+        customerName: cust.name,
+        customerMobile: cust.mobile,
+        customerAddress: document.getElementById('ch-cust-address').value,
+        driverName: document.getElementById('ch-driver').value,
+        vehicleNo: document.getElementById('ch-vehicle').value,
+        remarks: document.getElementById('ch-remarks').value,
+        items,
+        totalQty,
+        customerSig: getCanvasData('cust-sig-canvas'),
+        companySig: getCanvasData('comp-sig-canvas')
+      };
+
+      await dbPut('challans', challan);
+      await logActivity('Created Challan', `${challan.challanNo} for ${challan.customerName}`);
+      showToast('Delivery Challan Created!', 'success');
+
+      printDeliveryChallan(challan);
+      switchView('challans');
+    }
+
+    async function renderChallanTable() {
+      const challans = await dbGetAll('challans');
+      const search = document.getElementById('challan-search').value.toLowerCase();
+      const tbody = document.getElementById('challan-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = challans.filter(c => c.challanNo.toLowerCase().includes(search) || c.customerName.toLowerCase().includes(search));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No delivery challans found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        tbody.innerHTML += `
+          <tr>
+            <td><b>${c.challanNo}</b></td>
+            <td>${c.date}</td>
+            <td>${c.customerName}</td>
+            <td><span class="badge badge-secondary">${c.totalQty} items</span></td>
+            <td>${c.driverName || '-'} / ${c.vehicleNo || '-'}</td>
+            <td>
+              <div style="display:flex; gap:0.3rem;">
+                <button class="btn btn-outline btn-sm" onclick="reprintChallan('${c.id}')">View/Print</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteChallan('${c.id}')">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function reprintChallan(id) {
+      const key = isNaN(id) ? id : Number(id);
+      const c = await dbGet('challans', key);
+      if (c) printDeliveryChallan(c);
+    }
+
+    async function deleteChallan(id) {
+      if (confirm('Delete this challan record? (Note: Stock will not automatically revert)')) {
+        const key = isNaN(id) ? id : Number(id);
+        const c = await dbGet('challans', key);
+        await dbDelete('challans', key);
+        await logActivity('Deleted Challan', c ? c.challanNo : `ID: ${id}`);
+        showToast('Challan record removed', 'danger');
+        renderChallanTable();
+      }
+    }
+
+    /* --- CANVAS SIGNATURE PADS --- */
+    function initSignatureCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (e.clientX || e.touches[0].clientX) - rect.left,
+          y: (e.clientY || e.touches[0].clientY) - rect.top
+        };
+      }
+
+      canvas.onmousedown = canvas.ontouchstart = (e) => {
+        drawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      };
+
+      canvas.onmousemove = canvas.ontouchmove = (e) => {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      };
+
+      canvas.onmouseup = canvas.ontouchend = () => drawing = false;
+    }
+
+    function clearCanvas(id) {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function getCanvasData(id) {
+      const canvas = document.getElementById(id);
+      return canvas.toDataURL();
+    }
+
+    /* --- DELIVERY CHALLAN DISPLAY & PRINTING --- */
+    let currentChallanObj = null;
+
+    async function printDeliveryChallan(c) {
+      currentChallanObj = c;
+
+      const companySettings = (await dbGet('settings', 'company'))?.value || {
+        name: 'Sri Devi Metal Works',
+        address: '4-142, Andhra boor, Utkoor, Luxettipet, Mancherial Dist 504215',
+        phone: '',
+        gst: ''
+      };
+
+      let itemRowsHtml = c.items.map((it, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${it.name} (${it.code})</td>
+          <td>${it.qty}</td>
+          <td>${it.unit}</td>
+        </tr>
+      `).join('');
+
+      const challanMarkup = `
+        <div class="challan-print-card">
+          <div class="print-header">
+            <div>
+              ${companySettings.logo ? `<img src="${companySettings.logo}" style="max-height:50px; margin-bottom:5px;"><br>` : ''}
+              <h2 style="margin:0;">${companySettings.name}</h2>
+              <div style="font-size:0.85rem;">${companySettings.address}</div>
+              <div style="font-size:0.85rem;">Phone: ${companySettings.phone} | GST: ${companySettings.gst}</div>
+            </div>
+            <div style="text-align: right;">
+              <h1 style="margin:0; font-size:1.3rem; color:#000;">DELIVERY CHALLAN</h1>
+              <div><b>Challan No:</b> ${c.challanNo}</div>
+              <div><b>Date:</b> ${c.date}</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 15px; display:flex; justify-content:space-between; font-size:0.9rem;">
+            <div>
+              <h4 style="margin-bottom:3px;">Customer Details:</h4>
+              <div><b>Name:</b> ${c.customerName}</div>
+              <div><b>Phone:</b> ${c.customerMobile}</div>
+              <div><b>Address:</b> ${c.customerAddress || 'N/A'}</div>
+            </div>
+            <div>
+              <h4 style="margin-bottom:3px;">Transport Info:</h4>
+              <div><b>Driver:</b> ${c.driverName || 'N/A'}</div>
+              <div><b>Vehicle No:</b> ${c.vehicleNo || 'N/A'}</div>
+            </div>
+          </div>
+
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Product Description</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRowsHtml}
+            </tbody>
+          </table>
+
+          <div style="margin-bottom: 15px; font-size: 0.85rem;">
+            <b>Remarks:</b> ${c.remarks || 'None'}
+          </div>
+
+          <div class="print-signatures">
+            <div class="sig-box">
+              ${c.customerSig ? `<img src="${c.customerSig}">` : '<div style="height:50px;"></div>'}
+              <div class="sig-line">Customer Signature</div>
+            </div>
+            <div class="sig-box">
+              ${c.companySig ? `<img src="${c.companySig}">` : '<div style="height:50px;"></div>'}
+              <div class="sig-line">Authorized Signature</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('print-section').innerHTML = challanMarkup;
+      document.getElementById('modal-challan-content').innerHTML = challanMarkup;
+      openModal('challan-preview-modal');
+    }
+
+    // 1. WhatsApp Link Share
+    function shareWhatsAppChallan() {
+      if (!currentChallanObj) return;
+      const c = currentChallanObj;
+
+      let itemsSummary = c.items.map((it, idx) => `${idx + 1}. ${it.name} - ${it.qty} ${it.unit}`).join('\n');
+
+      let text = `*DELIVERY CHALLAN: ${c.challanNo}*\nDate: ${c.date}\n\n` +
+                 `*CUSTOMER:* ${c.customerName} (${c.customerMobile})\n` +
+                 `Address: ${c.customerAddress || 'N/A'}\n\n` +
+                 `*ITEMS DELIVERED:*\n${itemsSummary}\n\n` +
+                 `Total Qty: ${c.totalQty}\n` +
+                 `Driver/Vehicle: ${c.driverName || '-'} / ${c.vehicleNo || '-'}\n` +
+                 `Remarks: ${c.remarks || 'None'}`;
+
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, '_blank');
+    }
+
+    // 2. Download Standalone HTML file
+    function downloadStandaloneHTML() {
+      if (!currentChallanObj) return;
+      const c = currentChallanObj;
+      const content = document.getElementById('modal-challan-content').innerHTML;
+
+      const fullPage = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${c.challanNo} - Delivery Challan</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f6f9; }
+    .challan-print-card { border: 2px solid #000; padding: 20px; background: white; max-width: 800px; margin: 0 auto; }
+    .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 15px; }
+    .print-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+    .print-signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+    .sig-box { text-align: center; width: 200px; }
+    .sig-box img { max-height: 60px; }
+    .sig-line { border-top: 1px dashed #000; padding-top: 5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  ${content}
+</body>
+</html>`;
+
+      const blob = new Blob([fullPage], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${c.challanNo}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast("Standalone HTML file downloaded!", "success");
+    }
+
+    /* --- REPORTS MODULE --- */
+    async function loadReport(type, btn = null) {
+      if (btn) {
+        document.querySelectorAll('#view-reports .btn-outline').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+
+      const table = document.getElementById('report-table');
+      const title = document.getElementById('report-title');
+
+      if (type === 'stock') {
+        title.textContent = 'Current Stock Valuation Report';
+        const products = await dbGetAll('products');
+        table.innerHTML = `
+          <thead>
+            <tr><th>Code</th><th>Name</th><th>Category</th><th>Qty</th><th>Pur. Price</th><th>Total Value</th></tr>
+          </thead>
+          <tbody>
+            ${products.map(p => `
+              <tr>
+                <td>${p.code}</td>
+                <td>${p.name}</td>
+                <td>${p.category || '-'}</td>
+                <td>${p.qty} ${p.unit}</td>
+                <td>₹${p.purchasePrice}</td>
+                <td>₹${(p.qty * p.purchasePrice).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+      } else if (type === 'low-stock') {
+        title.textContent = 'Low Stock Warning Report';
+        const products = await dbGetAll('products');
+        const low = products.filter(p => p.qty <= (p.lowStockLimit || 5));
+        table.innerHTML = `
+          <thead>
+            <tr><th>Code</th><th>Name</th><th>Category</th><th>Current Stock</th><th>Threshold</th></tr>
+          </thead>
+          <tbody>
+            ${low.map(p => `
+              <tr>
+                <td>${p.code}</td>
+                <td>${p.name}</td>
+                <td>${p.category || '-'}</td>
+                <td><span class="badge badge-danger">${p.qty} ${p.unit}</span></td>
+                <td>${p.lowStockLimit} ${p.unit}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+      } else if (type === 'daily' || type === 'monthly') {
+        title.textContent = type === 'daily' ? 'Daily Delivery Summary' : 'Monthly Delivery Summary';
+        const challans = await dbGetAll('challans');
+        table.innerHTML = `
+          <thead>
+            <tr><th>Challan No</th><th>Date</th><th>Customer</th><th>Total Items Delivered</th></tr>
+          </thead>
+          <tbody>
+            ${challans.map(c => `
+              <tr>
+                <td>${c.challanNo}</td>
+                <td>${c.date}</td>
+                <td>${c.customerName}</td>
+                <td>${c.totalQty}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+      }
+    }
+
+    /* --- SETTINGS & BACKUP/RESTORE --- */
+    let tempLogoImg = '';
+
+    async function loadCompanySettings() {
+      const set = (await dbGet('settings', 'company'))?.value;
+      if (set) {
+        document.getElementById('set-company-name').value = set.name || '';
+        document.getElementById('set-company-address').value = set.address || '';
+        document.getElementById('set-company-gst').value = set.gst || '';
+        document.getElementById('set-company-phone').value = set.phone || '';
+        if (set.logo) {
+          tempLogoImg = set.logo;
+          document.getElementById('logo-preview').src = set.logo;
+          document.getElementById('logo-preview').style.display = 'block';
+        }
+      }
+    }
+
+    function previewLogoUpload(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          tempLogoImg = e.target.result;
+          document.getElementById('logo-preview').src = tempLogoImg;
+          document.getElementById('logo-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function saveCompanySettings(e) {
+      e.preventDefault();
+      const company = {
+        name: document.getElementById('set-company-name').value,
+        address: document.getElementById('set-company-address').value,
+        gst: document.getElementById('set-company-gst').value,
+        phone: document.getElementById('set-company-phone').value,
+        logo: tempLogoImg
+      };
+
+      await dbPut('settings', { key: 'company', value: company });
+      await logActivity('Updated Settings', 'Company Profile Updated');
+      showToast('Settings saved successfully', 'success');
+    }
+
+    async function exportJSONBackup() {
+      const backupData = {
+        products: await dbGetAll('products'),
+        customers: await dbGetAll('customers'),
+        challans: await dbGetAll('challans'),
+        settings: await dbGetAll('settings'),
+        activity: await dbGetAll('activity'),
+        exportDate: new Date().toISOString()
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `Inventory_Backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      showToast('Backup JSON exported successfully', 'success');
+    }
+
+    async function applyRestoredData(data) {
+      if (confirm('Importing data will overwrite existing records. Continue?')) {
+        if (data.products) for (let item of data.products) await dbPut('products', item);
+        if (data.customers) for (let item of data.customers) await dbPut('customers', item);
+        if (data.challans) for (let item of data.challans) await dbPut('challans', item);
+        if (data.settings) for (let item of data.settings) await dbPut('settings', item);
+
+        showToast('Backup restored successfully!', 'success');
+        closeModal('restore-modal');
+        loadDashboardData();
+      }
+    }
+
+    async function importJSONBackup(input) {
+      if (!input.files || !input.files[0]) return;
+
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          await applyRestoredData(data);
+        } catch (err) {
+          alert('Invalid JSON Backup file');
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    async function importJSONFromText() {
+      const rawText = document.getElementById('import-json-text').value.trim();
+      if (!rawText) {
+        alert('Please paste valid backup JSON text into the area above.');
+        return;
+      }
+
+      try {
+        const data = JSON.parse(rawText);
+        await applyRestoredData(data);
+      } catch (e) {
+        alert('Failed to parse JSON. Please make sure you pasted a valid export JSON text.');
+      }
+    }
+
+    /* --- GLOBAL SEARCH & MODALS HELPERS --- */
+    function handleGlobalSearch(query) {
+      if (!query.trim()) return;
+      switchView('inventory');
+      document.getElementById('inv-search').value = query;
+      renderInventoryTable();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    /* --- KEYBOARD SHORTCUTS --- */
+    document.addEventListener('keydown', (e) => {
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        openCreateChallanView();
+      }
+      if (e.altKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        document.getElementById('global-search').focus();
+      }
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+      }
+    });
+
+    /* --- INITIALIZATION --- */
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initDB();
+      initCloudEngine();
+      loadDashboardData();
+
+      const savedTheme = (await dbGet('settings', 'theme'))?.value;
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    });
+  </script>
+</body>
+</html>
